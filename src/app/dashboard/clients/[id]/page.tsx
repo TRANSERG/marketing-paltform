@@ -16,8 +16,10 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getAuthUser();
-  const { client, clientServices } = await getClientById(id);
+  const [user, { client, clientServices }] = await Promise.all([
+    getAuthUser(),
+    getClientById(id),
+  ]);
   if (!client) notFound();
   const canUpdate =
     hasPermission(user, "clients.update") || hasPermission(user, "users.manage");
@@ -33,15 +35,17 @@ export default async function ClientDetailPage({
     canCloseDeal &&
     (client.status === "lead" || client.status === "qualified");
 
-  let assignableUsers: { id: string; display_name: string | null }[] = [];
-  let assigneeName: string | null = null;
-  if (canAssignOps) {
-    [assignableUsers, assigneeName] = await Promise.all([
-      getAssignableUsers(),
-      client.assigned_ops_id ? getProfileDisplayName(client.assigned_ops_id) : Promise.resolve(null),
-    ]);
-  }
-  const servicesWithStages = canMoveStage && clientServices.length > 0 ? await getServicesWithStages() : [];
+  const [assignableResult, servicesWithStages] = await Promise.all([
+    canAssignOps
+      ? Promise.all([
+          getAssignableUsers(),
+          client.assigned_ops_id ? getProfileDisplayName(client.assigned_ops_id) : Promise.resolve(null),
+        ])
+      : Promise.resolve([[] as { id: string; display_name: string | null }[], null] as const),
+    canMoveStage && clientServices.length > 0 ? getServicesWithStages() : Promise.resolve([]),
+  ]);
+  const assignableUsers = canAssignOps ? assignableResult[0] : [];
+  const assigneeName: string | null = canAssignOps ? assignableResult[1] : null;
 
   return (
     <div className="space-y-8">

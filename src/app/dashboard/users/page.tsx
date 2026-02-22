@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { hasPermission } from "@/types/auth";
@@ -6,13 +7,23 @@ import { AddUserForm } from "./AddUserForm";
 import { UserRoleSelect } from "./UserRoleSelect";
 import { UserRowActions } from "./UserRowActions";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const user = await getAuthUser();
   const canManage = hasPermission(user, "users.manage");
   if (!canManage) {
     redirect("/dashboard");
   }
-  const [users, roles] = await Promise.all([getAdminUsersList(), getRoles()]);
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  const [result, roles] = await Promise.all([
+    getAdminUsersList({ page, perPage: 50 }),
+    getRoles(),
+  ]);
+  const { users, hasMore, page: currentPage } = result;
 
   return (
     <div className="space-y-6">
@@ -61,6 +72,32 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
+      {(currentPage > 1 || hasMore) && (
+        <div className="flex items-center justify-between text-sm text-zinc-400">
+          <span>
+            Page {currentPage}
+            {hasMore && " (more available)"}
+          </span>
+          <div className="flex gap-2">
+            {currentPage > 1 && (
+              <Link
+                href={`/dashboard/users?page=${currentPage - 1}`}
+                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+              >
+                Previous
+              </Link>
+            )}
+            {hasMore && (
+              <Link
+                href={`/dashboard/users?page=${currentPage + 1}`}
+                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+              >
+                Next
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

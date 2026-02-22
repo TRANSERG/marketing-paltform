@@ -8,32 +8,52 @@ export interface AdminUserListRow {
   roles: string[];
 }
 
-/** List all users with email and roles. Requires users.manage. Returns [] if not allowed or no service role. */
-export async function getAdminUsersList(): Promise<AdminUserListRow[]> {
+const DEFAULT_USERS_PAGE_SIZE = 50;
+
+export interface GetAdminUsersListResult {
+  users: AdminUserListRow[];
+  hasMore: boolean;
+  page: number;
+  perPage: number;
+}
+
+/** List users with email and roles (paginated). Requires users.manage. Returns empty if not allowed or no service role. */
+export async function getAdminUsersList(opts?: {
+  page?: number;
+  perPage?: number;
+}): Promise<GetAdminUsersListResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) return { users: [], hasMore: false, page: 1, perPage: DEFAULT_USERS_PAGE_SIZE };
   const { data: callerRoles } = await supabase
     .from("user_roles")
     .select("role_id")
     .eq("user_id", user.id);
   const roleIds = (callerRoles ?? []).map((r) => r.role_id);
-  if (roleIds.length === 0) return [];
+  if (roleIds.length === 0) return { users: [], hasMore: false, page: 1, perPage: DEFAULT_USERS_PAGE_SIZE };
   const { data: perms } = await supabase
     .from("role_permissions")
     .select("role_id")
     .eq("permission", "users.manage")
     .in("role_id", roleIds);
-  if (!perms?.length) return [];
+  if (!perms?.length) return { users: [], hasMore: false, page: 1, perPage: DEFAULT_USERS_PAGE_SIZE };
+
+  const page = Math.max(1, opts?.page ?? 1);
+  const perPage = Math.min(100, Math.max(1, opts?.perPage ?? DEFAULT_USERS_PAGE_SIZE));
 
   let admin;
   try {
     admin = createAdminClient();
   } catch {
-    return [];
+    return { users: [], hasMore: false, page, perPage };
   }
-  const { data: authData, error: authError } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (authError || !authData?.users?.length) return [];
+  const { data: authData, error: authError } = await admin.auth.admin.listUsers({
+    perPage,
+    page,
+  });
+  if (authError || !authData?.users?.length) {
+    return { users: [], hasMore: false, page, perPage };
+  }
   const users = authData.users;
   const userIds = users.map((u) => u.id);
   const { data: profiles } = await admin.from("profiles").select("id, display_name").in("id", userIds);
@@ -47,12 +67,14 @@ export async function getAdminUsersList(): Promise<AdminUserListRow[]> {
     const name = roleMap[ur.role_id];
     if (name) rolesByUser[ur.user_id].push(name);
   }
-  return users.map((u) => ({
+  const rows: AdminUserListRow[] = users.map((u) => ({
     id: u.id,
     email: u.email ?? null,
     display_name: profileMap[u.id]?.display_name ?? null,
     roles: rolesByUser[u.id] ?? [],
   }));
+  const hasMore = users.length === perPage;
+  return { users: rows, hasMore, page, perPage };
 }
 
 export async function getRoles(): Promise<{ id: string; name: string }[]> {

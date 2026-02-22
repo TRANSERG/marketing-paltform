@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
-import { getClients } from "@/lib/clients";
+import { getClients, getClientsCount } from "@/lib/clients";
 import { hasPermission } from "@/types/auth";
 import type { ClientStatus } from "@/types/database";
 
+const PAGE_SIZE = 25;
 const STATUS_OPTIONS: { value: ClientStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "lead", label: "Lead" },
@@ -13,10 +14,18 @@ const STATUS_OPTIONS: { value: ClientStatus | "all"; label: string }[] = [
   { value: "churned", label: "Churned" },
 ];
 
+function buildClientsUrl(params: { status?: string; page?: number }) {
+  const search = new URLSearchParams();
+  if (params.status) search.set("status", params.status);
+  if (params.page != null && params.page > 1) search.set("page", String(params.page));
+  const q = search.toString();
+  return `/dashboard/clients${q ? `?${q}` : ""}`;
+}
+
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }) {
   const user = await getAuthUser();
   const params = await searchParams;
@@ -29,8 +38,18 @@ export default async function ClientsPage({
     )
       ? (statusParam as ClientStatus)
       : undefined;
-  const clients = await getClients(validStatus ? { status: validStatus } : undefined);
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+  const filters = validStatus ? { status: validStatus } : undefined;
+
+  const [clients, total] = await Promise.all([
+    getClients(filters, { limit: PAGE_SIZE, offset }),
+    getClientsCount(filters),
+  ]);
   const canCreate = hasPermission(user, "clients.create") || hasPermission(user, "users.manage");
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hasPrev = page > 1;
+  const hasNext = page < totalPages;
 
   return (
     <div className="space-y-6">
@@ -50,11 +69,10 @@ export default async function ClientsPage({
         {STATUS_OPTIONS.map((opt) => (
           <Link
             key={opt.value}
-            href={
-              opt.value === "all"
-                ? "/dashboard/clients"
-                : `/dashboard/clients?status=${opt.value}`
-            }
+            href={buildClientsUrl({
+              status: opt.value === "all" ? undefined : opt.value,
+              page: 1,
+            })}
             className={`rounded-lg px-3 py-1.5 text-sm ${
               (opt.value === "all" && !validStatus) || validStatus === opt.value
                 ? "bg-zinc-700 text-white"
@@ -118,6 +136,32 @@ export default async function ClientsPage({
           </tbody>
         </table>
       </div>
+
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between text-sm text-zinc-400">
+          <span>
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          </span>
+          <div className="flex gap-2">
+            {hasPrev && (
+              <Link
+                href={buildClientsUrl({ status: validStatus, page: page - 1 })}
+                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+              >
+                Previous
+              </Link>
+            )}
+            {hasNext && (
+              <Link
+                href={buildClientsUrl({ status: validStatus, page: page + 1 })}
+                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+              >
+                Next
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

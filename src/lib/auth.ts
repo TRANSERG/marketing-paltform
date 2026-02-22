@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthUser, RoleName } from "@/types/auth";
 
@@ -9,7 +10,7 @@ interface JWTClaims {
   permissions?: string[];
 }
 
-export async function getAuthUser(): Promise<AuthUser | null> {
+async function getAuthUserUncached(): Promise<AuthUser | null> {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
@@ -45,3 +46,5 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     permissions,
   };
 }
+
+export const getAuthUser = cache(getAuthUserUncached);
