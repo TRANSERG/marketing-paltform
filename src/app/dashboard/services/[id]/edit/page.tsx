@@ -65,12 +65,25 @@ export default async function EditServicePage({
       default_due_offset_daysRaw === "" || default_due_offset_daysRaw === null
         ? null
         : parseInt(default_due_offset_daysRaw, 10);
+    const is_recurring = formData.get("is_recurring") === "on";
+    const recurrence_intervalRaw = (formData.get("recurrence_interval") as string) || null;
+    const recurrence_interval =
+      recurrence_intervalRaw && ["day", "week", "month"].includes(recurrence_intervalRaw)
+        ? recurrence_intervalRaw
+        : null;
+    const recurrence_interval_count = Math.max(
+      1,
+      parseInt((formData.get("recurrence_interval_count") as string) ?? "1", 10) || 1
+    );
     if (!name) return { error: "Name is required" };
     const { error } = await supabase.from("task_templates").insert({
       service_id: id,
       name,
       sort_order: Number.isNaN(sort_order) ? 0 : sort_order,
       default_due_offset_days: default_due_offset_days != null && !Number.isNaN(default_due_offset_days) ? default_due_offset_days : null,
+      is_recurring: !!is_recurring,
+      recurrence_interval: is_recurring ? recurrence_interval : null,
+      recurrence_interval_count,
     });
     if (error) return { error: error.message };
   }

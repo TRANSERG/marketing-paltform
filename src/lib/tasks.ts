@@ -1,5 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Task, TaskWithDetails, TaskChecklistItem } from "@/types/database";
+import type {
+  Task,
+  TaskWithDetails,
+  TaskChecklistItem,
+  TaskRecurrenceInterval,
+} from "@/types/database";
+
+/** Compute next due date from a reference date using template recurrence. */
+export function nextDueDateFromRecurrence(
+  fromDate: Date,
+  interval: TaskRecurrenceInterval,
+  count: number
+): string {
+  const d = new Date(fromDate);
+  if (interval === "day") {
+    d.setDate(d.getDate() + count);
+  } else if (interval === "week") {
+    d.setDate(d.getDate() + count * 7);
+  } else {
+    d.setMonth(d.getMonth() + count);
+  }
+  return d.toISOString().slice(0, 10);
+}
 
 export async function getTasksByClientServiceId(
   clientServiceId: string
@@ -22,7 +44,7 @@ export async function getTasksByClientServiceId(
       completed_at,
       created_at,
       updated_at,
-      task_template:task_templates(id, name, description, sort_order, default_due_offset_days, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
+      task_template:task_templates(id, name, description, sort_order, default_due_offset_days, is_recurring, recurrence_interval, recurrence_interval_count, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
       task_checklist_items(id, task_id, label, sort_order, completed, completed_at, created_at)
     `
     )
@@ -110,7 +132,7 @@ export async function getTaskById(
       completed_at,
       created_at,
       updated_at,
-      task_template:task_templates(id, service_id, name, description, sort_order, default_due_offset_days, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
+      task_template:task_templates(id, service_id, name, description, sort_order, default_due_offset_days, is_recurring, recurrence_interval, recurrence_interval_count, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
       task_checklist_items(id, task_id, label, sort_order, completed, completed_at, created_at)
     `
     )
@@ -198,4 +220,77 @@ export async function createTasksForClientService(
       );
     }
   }
+}
+
+/** Create the next occurrence of a recurring task (same client_service, template, assignee). */
+export async function createNextOccurrence(
+  taskId: string
+): Promise<{ taskId: string } | { error: string }> {
+  const supabase = await createClient();
+  const { data: task, error: taskError } = await supabase
+    .from("tasks")
+    .select(
+      "id, client_service_id, task_template_id, assignee_id, status, completed_at, due_date"
+    )
+    .eq("id", taskId)
+    .single();
+  if (taskError || !task) return { error: "Task not found" };
+  const taskRow = task as { status: string };
+  if (taskRow.status !== "completed") return { error: "Task must be completed first" };
+
+  const { data: template, error: templateError } = await supabase
+    .from("task_templates")
+    .select(
+      "id, name, is_recurring, recurrence_interval, recurrence_interval_count, task_template_checklist(id, label, sort_order)"
+    )
+    .eq("id", task.task_template_id)
+    .single();
+  if (templateError || !template) return { error: "Template not found" };
+
+  const t = template as {
+    is_recurring: boolean;
+    recurrence_interval: TaskRecurrenceInterval | null;
+    recurrence_interval_count: number;
+    name: string;
+    task_template_checklist?: { label: string; sort_order: number }[];
+  };
+  if (!t.is_recurring || !t.recurrence_interval)
+    return { error: "Template is not recurring" };
+
+  const refDate = task.completed_at
+    ? new Date(task.completed_at)
+    : task.due_date
+      ? new Date(task.due_date)
+      : new Date();
+  const nextDue = nextDueDateFromRecurrence(
+    refDate,
+    t.recurrence_interval,
+    t.recurrence_interval_count
+  );
+
+  const { data: newTask, error: insertError } = await supabase
+    .from("tasks")
+    .insert({
+      client_service_id: task.client_service_id,
+      task_template_id: task.task_template_id,
+      assignee_id: task.assignee_id,
+      title: t.name,
+      due_date: nextDue,
+      status: "scheduled",
+    })
+    .select("id")
+    .single();
+  if (insertError || !newTask) return { error: insertError?.message ?? "Failed to create task" };
+
+  const checklist = t.task_template_checklist ?? [];
+  if (checklist.length > 0) {
+    await supabase.from("task_checklist_items").insert(
+      checklist.map((c) => ({
+        task_id: newTask.id,
+        label: c.label,
+        sort_order: c.sort_order,
+      }))
+    );
+  }
+  return { taskId: newTask.id };
 }

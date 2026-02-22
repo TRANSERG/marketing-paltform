@@ -95,6 +95,8 @@ export interface TaskTemplateField {
   updated_at: string;
 }
 
+export type TaskRecurrenceInterval = "day" | "week" | "month";
+
 export interface TaskTemplate {
   id: string;
   service_id: string;
@@ -102,6 +104,9 @@ export interface TaskTemplate {
   description: string | null;
   sort_order: number;
   default_due_offset_days: number | null;
+  is_recurring: boolean;
+  recurrence_interval: TaskRecurrenceInterval | null;
+  recurrence_interval_count: number;
   created_at: string;
   updated_at: string;
   task_template_fields?: TaskTemplateField[];

@@ -8,6 +8,7 @@ import { hasPermission } from "@/types/auth";
 import type { TaskTemplateField } from "@/types/database";
 import { TaskDetailForm } from "./TaskDetailForm";
 import { TaskChecklist } from "./TaskChecklist";
+import { CreateNextOccurrenceButton } from "./CreateNextOccurrenceButton";
 
 export default async function TaskDetailPage({
   params,
@@ -136,6 +137,20 @@ export default async function TaskDetailPage({
           />
         </div>
       )}
+
+      {task.status === "completed" &&
+        canEdit &&
+        (task.task_template as { is_recurring?: boolean } | undefined)?.is_recurring === true && (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6">
+            <h3 className="font-medium text-zinc-300">Recurring task</h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              Create the next occurrence for this task (same assignee and template).
+            </p>
+            <div className="mt-3">
+              <CreateNextOccurrenceButton taskId={task.id} clientId={clientId} />
+            </div>
+          </div>
+        )}
     </div>
   );
 }

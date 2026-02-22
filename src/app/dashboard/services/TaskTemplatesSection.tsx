@@ -98,6 +98,46 @@ export function TaskTemplatesSection({
             placeholder="e.g. 7"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="template_is_recurring"
+            name="is_recurring"
+            className="rounded border-zinc-600 bg-zinc-900 text-blue-500 focus:ring-blue-500"
+          />
+          <label htmlFor="template_is_recurring" className="text-sm text-zinc-400">
+            Recurring task (e.g. daily posting, weekly review)
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="template_recurrence_interval" className="mb-1 block text-xs text-zinc-500">
+              Repeat every
+            </label>
+            <select
+              id="template_recurrence_interval"
+              name="recurrence_interval"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="day">Day(s)</option>
+              <option value="week">Week(s)</option>
+              <option value="month">Month(s)</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="template_recurrence_count" className="mb-1 block text-xs text-zinc-500">
+              Every N
+            </label>
+            <input
+              type="number"
+              id="template_recurrence_count"
+              name="recurrence_interval_count"
+              min={1}
+              defaultValue={1}
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
         {state?.error && (
           <p className="text-sm text-red-400">{state.error}</p>
         )}
@@ -120,6 +160,7 @@ export function TaskTemplatesSection({
                 <th className="px-4 py-3 font-medium">Order</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Due offset</th>
+                <th className="px-4 py-3 font-medium">Recurring</th>
                 <th className="px-4 py-3 font-medium">Form fields</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
@@ -132,6 +173,11 @@ export function TaskTemplatesSection({
                   <td className="px-4 py-3 text-zinc-400">
                     {t.default_due_offset_days ?? "—"} days
                   </td>
+                  <td className="px-4 py-3 text-zinc-400">
+                    {t.is_recurring
+                      ? `Every ${t.recurrence_interval_count} ${t.recurrence_interval ?? "day"}${(t.recurrence_interval_count ?? 1) > 1 ? "s" : ""}`
+                      : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/services/${serviceId}/templates/${t.id}/fields`}
@@ -140,7 +186,13 @@ export function TaskTemplatesSection({
                       Form fields ({(t as { task_template_fields?: unknown[] }).task_template_fields?.length ?? 0})
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex flex-wrap gap-1">
+                    <Link
+                      href={`/dashboard/services/${serviceId}/templates/${t.id}/edit`}
+                      className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                    >
+                      Edit
+                    </Link>
                     <button
                       type="button"
                       onClick={() => handleDelete(t.id)}
