@@ -23,8 +23,8 @@ export default async function RolesPage() {
         <h3 className="mb-2 text-sm font-medium text-zinc-400">Add role</h3>
         <AddRoleForm />
       </div>
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[600px]">
           <thead className="bg-zinc-900 text-zinc-400">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>

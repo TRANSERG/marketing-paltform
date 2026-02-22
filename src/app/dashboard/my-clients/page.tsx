@@ -21,8 +21,8 @@ export default async function MyClientsPage() {
       <p className="text-sm text-zinc-400">
         Clients assigned to you. With RLS, only your assigned clients are listed.
       </p>
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[600px]">
           <thead className="bg-zinc-900 text-zinc-400">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>

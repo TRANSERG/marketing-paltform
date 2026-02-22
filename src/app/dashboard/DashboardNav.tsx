@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import type { AuthUser } from "@/types/auth";
 import { hasPermission, isAdmin } from "@/types/auth";
 
-const navClass = "block px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white";
+const navClass = "block px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white min-h-[44px] flex items-center";
 const activeClass = "bg-zinc-800 text-white";
 
 export function DashboardNav({ user }: { user: AuthUser }) {

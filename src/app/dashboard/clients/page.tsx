@@ -53,19 +53,19 @@ export default async function ClientsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-medium">Clients</h2>
         {canCreate && (
           <Link
             href="/dashboard/clients/new"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 min-h-[44px] inline-flex items-center justify-center w-full sm:w-auto"
           >
             New client
           </Link>
         )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((opt) => (
           <Link
             key={opt.value}
@@ -73,7 +73,7 @@ export default async function ClientsPage({
               status: opt.value === "all" ? undefined : opt.value,
               page: 1,
             })}
-            className={`rounded-lg px-3 py-1.5 text-sm ${
+            className={`rounded-lg px-3 py-2 text-sm min-h-[44px] flex items-center ${
               (opt.value === "all" && !validStatus) || validStatus === opt.value
                 ? "bg-zinc-700 text-white"
                 : "bg-zinc-800 text-zinc-400 hover:text-white"
@@ -84,8 +84,8 @@ export default async function ClientsPage({
         ))}
       </div>
 
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[600px]">
           <thead className="bg-zinc-900 text-zinc-400">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
@@ -138,7 +138,7 @@ export default async function ClientsPage({
       </div>
 
       {total > PAGE_SIZE && (
-        <div className="flex items-center justify-between text-sm text-zinc-400">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-zinc-400">
           <span>
             Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
           </span>
@@ -146,7 +146,7 @@ export default async function ClientsPage({
             {hasPrev && (
               <Link
                 href={buildClientsUrl({ status: validStatus, page: page - 1 })}
-                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+                className="rounded bg-zinc-800 px-3 py-2.5 hover:bg-zinc-700 min-h-[44px] flex items-center"
               >
                 Previous
               </Link>
@@ -154,7 +154,7 @@ export default async function ClientsPage({
             {hasNext && (
               <Link
                 href={buildClientsUrl({ status: validStatus, page: page + 1 })}
-                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+                className="rounded bg-zinc-800 px-3 py-2.5 hover:bg-zinc-700 min-h-[44px] flex items-center"
               >
                 Next
               </Link>

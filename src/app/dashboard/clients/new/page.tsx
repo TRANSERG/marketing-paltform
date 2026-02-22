@@ -43,14 +43,12 @@ export default async function NewClientPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/clients"
-          className="text-sm text-zinc-400 hover:text-white"
-        >
-          ← Clients
-        </Link>
-      </div>
+      <Link
+        href="/dashboard/clients"
+        className="text-sm text-zinc-400 hover:text-white min-h-[44px] inline-flex items-center"
+      >
+        ← Clients
+      </Link>
       <h2 className="text-lg font-medium">New client</h2>
       <ClientForm action={createClientAction} />
     </div>

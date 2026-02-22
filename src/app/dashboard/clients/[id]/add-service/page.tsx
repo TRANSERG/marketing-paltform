@@ -57,7 +57,7 @@ export default async function AddServicePage({
     <div className="space-y-6">
       <Link
         href={`/dashboard/clients/${id}`}
-        className="text-sm text-zinc-400 hover:text-white"
+        className="text-sm text-zinc-400 hover:text-white min-h-[44px] inline-flex items-center"
       >
         ← Back to client
       </Link>

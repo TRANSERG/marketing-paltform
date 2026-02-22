@@ -48,25 +48,25 @@ export default async function ClientDetailPage({
   const assigneeName: string | null = canAssignOps ? assignableResult[1] : null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/dashboard/clients"
-          className="text-sm text-zinc-400 hover:text-white"
+          className="text-sm text-zinc-400 hover:text-white min-h-[44px] flex items-center"
         >
           ← Clients
         </Link>
         {canUpdate && (
           <Link
             href={`/dashboard/clients/${id}/edit`}
-            className="rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
+            className="rounded-lg border border-zinc-600 px-3 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 min-h-[44px] inline-flex items-center w-full sm:w-auto justify-center"
           >
             Edit
           </Link>
         )}
       </div>
 
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6">
         <h2 className="text-lg font-medium">{client.name}</h2>
         <dl className="mt-4 grid gap-2 text-sm">
           <div>
@@ -123,25 +123,25 @@ export default async function ClientDetailPage({
       </div>
 
       <div>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="font-medium">Services</h3>
           {canAddService && (
             <Link
               href={`/dashboard/clients/${id}/add-service`}
-              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+              className="rounded-lg bg-blue-600 px-3 py-2.5 text-sm text-white hover:bg-blue-700 min-h-[44px] inline-flex items-center justify-center w-full sm:w-auto"
             >
               Add service
             </Link>
           )}
         </div>
-        <div className="rounded-lg border border-zinc-800 overflow-hidden">
+        <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
           {clientServices.length === 0 ? (
             <p className="px-4 py-6 text-center text-zinc-500">
               No services added yet.
               {canAddService && " Add one to get started."}
             </p>
           ) : (
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[500px]">
               <thead className="bg-zinc-900 text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">Service</th>

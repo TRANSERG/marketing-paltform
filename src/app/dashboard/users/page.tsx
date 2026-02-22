@@ -32,8 +32,8 @@ export default async function UsersPage({
         <h3 className="mb-2 text-sm font-medium text-zinc-400">Add user</h3>
         <AddUserForm roles={roles} />
       </div>
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[600px]">
           <thead className="bg-zinc-900 text-zinc-400">
             <tr>
               <th className="px-4 py-3 font-medium">Email</th>
@@ -73,7 +73,7 @@ export default async function UsersPage({
         </table>
       </div>
       {(currentPage > 1 || hasMore) && (
-        <div className="flex items-center justify-between text-sm text-zinc-400">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-zinc-400">
           <span>
             Page {currentPage}
             {hasMore && " (more available)"}
@@ -82,7 +82,7 @@ export default async function UsersPage({
             {currentPage > 1 && (
               <Link
                 href={`/dashboard/users?page=${currentPage - 1}`}
-                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+                className="rounded bg-zinc-800 px-3 py-2.5 hover:bg-zinc-700 min-h-[44px] flex items-center"
               >
                 Previous
               </Link>
@@ -90,7 +90,7 @@ export default async function UsersPage({
             {hasMore && (
               <Link
                 href={`/dashboard/users?page=${currentPage + 1}`}
-                className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700"
+                className="rounded bg-zinc-800 px-3 py-2.5 hover:bg-zinc-700 min-h-[44px] flex items-center"
               >
                 Next
               </Link>

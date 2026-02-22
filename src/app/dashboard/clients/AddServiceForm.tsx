@@ -32,7 +32,7 @@ export function AddServiceForm({ action, services, clientId }: AddServiceFormPro
           id="service_id"
           name="service_id"
           required
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-base min-h-[48px]"
         >
           <option value="">Select a service</option>
           {services.map((s) => (
@@ -45,17 +45,17 @@ export function AddServiceForm({ action, services, clientId }: AddServiceFormPro
       {state?.error && (
         <p className="text-sm text-red-400">{state.error}</p>
       )}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
         >
           {isPending ? "Adding…" : "Add service"}
         </button>
         <Link
           href={`/dashboard/clients/${clientId}`}
-          className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800"
+          className="rounded-lg border border-zinc-600 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 min-h-[48px] inline-flex items-center"
         >
           Cancel
         </Link>
