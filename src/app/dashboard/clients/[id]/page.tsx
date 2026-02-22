@@ -1,0 +1,185 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getAuthUser } from "@/lib/auth";
+import { getClientById } from "@/lib/clients";
+import { getAssignableUsers, getProfileDisplayName } from "@/lib/users";
+import { getServicesWithStages } from "@/lib/services";
+import { hasPermission } from "@/types/auth";
+import { CloseDealButton } from "../CloseDealButton";
+import { RemoveClientServiceButton } from "../RemoveClientServiceButton";
+import { AssignOpsForm } from "../AssignOpsForm";
+import { MoveStageSelect } from "../MoveStageSelect";
+
+export default async function ClientDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const user = await getAuthUser();
+  const { client, clientServices } = await getClientById(id);
+  if (!client) notFound();
+  const canUpdate =
+    hasPermission(user, "clients.update") || hasPermission(user, "users.manage");
+  const canCloseDeal =
+    hasPermission(user, "clients.change_status_to_closed") ||
+    hasPermission(user, "users.manage");
+  const canAddService = canUpdate;
+  const canAssignOps =
+    hasPermission(user, "clients.assign_ops") || hasPermission(user, "users.manage");
+  const canMoveStage =
+    hasPermission(user, "client_services.update_stage") || hasPermission(user, "users.manage") || canUpdate;
+  const showCloseDeal =
+    canCloseDeal &&
+    (client.status === "lead" || client.status === "qualified");
+
+  let assignableUsers: { id: string; display_name: string | null }[] = [];
+  let assigneeName: string | null = null;
+  if (canAssignOps) {
+    [assignableUsers, assigneeName] = await Promise.all([
+      getAssignableUsers(),
+      client.assigned_ops_id ? getProfileDisplayName(client.assigned_ops_id) : Promise.resolve(null),
+    ]);
+  }
+  const servicesWithStages = canMoveStage && clientServices.length > 0 ? await getServicesWithStages() : [];
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/clients"
+          className="text-sm text-zinc-400 hover:text-white"
+        >
+          ← Clients
+        </Link>
+        {canUpdate && (
+          <Link
+            href={`/dashboard/clients/${id}/edit`}
+            className="rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
+          >
+            Edit
+          </Link>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-6">
+        <h2 className="text-lg font-medium">{client.name}</h2>
+        <dl className="mt-4 grid gap-2 text-sm">
+          <div>
+            <dt className="text-zinc-500">Status</dt>
+            <dd className="capitalize">{client.status}</dd>
+          </div>
+          {client.contact_email && (
+            <div>
+              <dt className="text-zinc-500">Contact email</dt>
+              <dd>{client.contact_email}</dd>
+            </div>
+          )}
+          {client.contact_phone && (
+            <div>
+              <dt className="text-zinc-500">Contact phone</dt>
+              <dd>{client.contact_phone}</dd>
+            </div>
+          )}
+          {client.address && (
+            <div>
+              <dt className="text-zinc-500">Address</dt>
+              <dd>{client.address}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-zinc-500">Timezone</dt>
+            <dd>{client.timezone ?? "UTC"}</dd>
+          </div>
+          {client.sold_at && (
+            <div>
+              <dt className="text-zinc-500">Sold at</dt>
+              <dd>{new Date(client.sold_at).toLocaleString()}</dd>
+            </div>
+          )}
+          {canAssignOps && (
+            <div>
+              <dt className="text-zinc-500">Assigned to</dt>
+              <dd>
+                {assigneeName ?? (client.assigned_ops_id ? client.assigned_ops_id.slice(0, 8) + "…" : "Unassigned")}
+                <AssignOpsForm
+                  clientId={id}
+                  currentAssignedId={client.assigned_ops_id}
+                  assignableUsers={assignableUsers}
+                />
+              </dd>
+            </div>
+          )}
+        </dl>
+        {showCloseDeal && (
+          <div className="mt-4">
+            <CloseDealButton clientId={id} />
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-medium">Services</h3>
+          {canAddService && (
+            <Link
+              href={`/dashboard/clients/${id}/add-service`}
+              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+            >
+              Add service
+            </Link>
+          )}
+        </div>
+        <div className="rounded-lg border border-zinc-800 overflow-hidden">
+          {clientServices.length === 0 ? (
+            <p className="px-4 py-6 text-center text-zinc-500">
+              No services added yet.
+              {canAddService && " Add one to get started."}
+            </p>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-900 text-zinc-400">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Service</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Current stage</th>
+                  {canMoveStage && <th className="px-4 py-3 font-medium">Move stage</th>}
+                  {canUpdate && <th className="px-4 py-3" />}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {clientServices.map((cs) => (
+                  <tr key={cs.id}>
+                    <td className="px-4 py-3">{cs.service?.name ?? "—"}</td>
+                    <td className="px-4 py-3 capitalize">{cs.status}</td>
+                    <td className="px-4 py-3">
+                      {cs.current_stage?.name ?? "—"}
+                    </td>
+                    {canMoveStage && (
+                      <td className="px-4 py-3">
+                        <MoveStageSelect
+                          clientServiceId={cs.id}
+                          serviceId={cs.service_id}
+                          currentStageId={cs.current_stage?.id}
+                          stages={servicesWithStages.find((s) => s.id === cs.service_id)?.service_stages ?? []}
+                        />
+                      </td>
+                    )}
+                    {canUpdate && (
+                      <td className="px-4 py-3">
+                        <RemoveClientServiceButton
+                          clientServiceId={cs.id}
+                          clientId={id}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
