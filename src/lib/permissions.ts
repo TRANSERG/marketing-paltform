@@ -5,6 +5,7 @@ export const ALL_PERMISSIONS = [
   "clients.create",
   "clients.read",
   "clients.update",
+  "clients.delete",
   "clients.assign_ops",
   "clients.change_status_to_closed",
   "client_services.read",

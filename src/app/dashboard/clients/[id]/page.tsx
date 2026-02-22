@@ -6,6 +6,7 @@ import { getAssignableUsers, getProfileDisplayName } from "@/lib/users";
 import { getServicesWithStages } from "@/lib/services";
 import { hasPermission } from "@/types/auth";
 import { CloseDealButton } from "../CloseDealButton";
+import { DeleteClientButton } from "../DeleteClientButton";
 import { RemoveClientServiceButton } from "../RemoveClientServiceButton";
 import { AssignOpsForm } from "../AssignOpsForm";
 import { MoveStageSelect } from "../MoveStageSelect";
@@ -31,6 +32,8 @@ export default async function ClientDetailPage({
     hasPermission(user, "clients.assign_ops") || hasPermission(user, "users.manage");
   const canMoveStage =
     hasPermission(user, "client_services.update_stage") || hasPermission(user, "users.manage") || canUpdate;
+  const canDelete =
+    hasPermission(user, "clients.delete") || hasPermission(user, "users.manage");
   const showCloseDeal =
     canCloseDeal &&
     (client.status === "lead" || client.status === "qualified");
@@ -56,14 +59,19 @@ export default async function ClientDetailPage({
         >
           ← Clients
         </Link>
-        {canUpdate && (
-          <Link
-            href={`/dashboard/clients/${id}/edit`}
-            className="rounded-lg border border-zinc-600 px-3 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 min-h-[44px] inline-flex items-center w-full sm:w-auto justify-center"
-          >
-            Edit
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canUpdate && (
+            <Link
+              href={`/dashboard/clients/${id}/edit`}
+              className="rounded-lg border border-zinc-600 px-3 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 min-h-[44px] inline-flex items-center w-full sm:w-auto justify-center"
+            >
+              Edit
+            </Link>
+          )}
+          {canDelete && (
+            <DeleteClientButton clientId={id} clientName={client.name} />
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6">

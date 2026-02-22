@@ -10,7 +10,7 @@ ON CONFLICT (name) DO NOTHING;
 -- Admin: all permissions
 INSERT INTO public.role_permissions (role_id, permission)
 SELECT id, unnest(ARRAY[
-  'users.manage', 'users.read', 'clients.create', 'clients.read', 'clients.update', 'clients.assign_ops', 'clients.change_status_to_closed',
+  'users.manage', 'users.read', 'clients.create', 'clients.read', 'clients.update', 'clients.delete', 'clients.assign_ops', 'clients.change_status_to_closed',
   'client_services.read', 'client_services.update_stage', 'client_services.assign',
   'content.read', 'content.create', 'content.update', 'reports.read'
 ])
