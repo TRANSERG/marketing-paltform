@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
 import { getClientById } from "@/lib/clients";
 import { getServicesWithStages } from "@/lib/services";
+import { createTasksForClientService } from "@/lib/tasks";
 import { hasPermission } from "@/types/auth";
 import { AddServiceForm } from "../../AddServiceForm";
 
@@ -31,6 +32,12 @@ export default async function AddServicePage({
     const serviceId = formData.get("service_id") as string;
     if (!serviceId) return { error: "Select a service" };
     const supabase = await createClient();
+    const { data: clientRow } = await supabase
+      .from("clients")
+      .select("assigned_ops_id")
+      .eq("id", id)
+      .single();
+    const assigneeId = (clientRow as { assigned_ops_id: string | null } | null)?.assigned_ops_id ?? null;
     const { data: cs, error: insertError } = await supabase
       .from("client_services")
       .insert({ client_id: id, service_id: serviceId, status: "pending" })
@@ -49,6 +56,9 @@ export default async function AddServicePage({
         client_service_id: cs.id,
         service_stage_id: firstStage.id,
       });
+    }
+    if (cs?.id) {
+      await createTasksForClientService(cs.id, serviceId, assigneeId);
     }
     redirect(`/dashboard/clients/${id}`);
   }

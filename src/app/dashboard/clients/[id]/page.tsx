@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { getClientById } from "@/lib/clients";
 import { getAssignableUsers, getProfileDisplayName } from "@/lib/users";
 import { getServicesWithStages } from "@/lib/services";
+import { getTasksByClientId } from "@/lib/tasks";
 import { hasPermission } from "@/types/auth";
 import { CloseDealButton } from "../CloseDealButton";
 import { DeleteClientButton } from "../DeleteClientButton";
@@ -38,7 +39,7 @@ export default async function ClientDetailPage({
     canCloseDeal &&
     (client.status === "lead" || client.status === "qualified");
 
-  const [assignableResult, servicesWithStages] = await Promise.all([
+  const [assignableResult, servicesWithStages, tasksForClient] = await Promise.all([
     canAssignOps
       ? Promise.all([
           getAssignableUsers(),
@@ -46,9 +47,12 @@ export default async function ClientDetailPage({
         ])
       : Promise.resolve([[] as { id: string; display_name: string | null }[], null] as const),
     canMoveStage && clientServices.length > 0 ? getServicesWithStages() : Promise.resolve([]),
+    getTasksByClientId(id),
   ]);
   const assignableUsers = canAssignOps ? assignableResult[0] : [];
   const assigneeName: string | null = canAssignOps ? assignableResult[1] : null;
+  const canUpdateTask =
+    hasPermission(user, "client_services.update_stage") || hasPermission(user, "users.manage") || canUpdate;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -192,6 +196,55 @@ export default async function ClientDetailPage({
           )}
         </div>
       </div>
+
+      {tasksForClient.length > 0 && (
+        <div>
+          <h3 className="mb-3 font-medium">Tasks</h3>
+          <div className="rounded-lg border border-zinc-800 overflow-hidden overflow-x-auto">
+            <table className="w-full text-left text-sm min-w-[500px]">
+              <thead className="bg-zinc-900 text-zinc-400">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Service</th>
+                  <th className="px-4 py-3 font-medium">Task</th>
+                  <th className="px-4 py-3 font-medium">Due date</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  {canUpdateTask && <th className="px-4 py-3 font-medium">Action</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {tasksForClient.map((task) => {
+                  const cs = clientServices.find((c) => c.id === task.client_service_id);
+                  const serviceName = cs?.service?.name ?? "—";
+                  const displayStatus =
+                    task.status === "overdue" || (task.due_date && task.status !== "completed" && task.status !== "cancelled" && new Date(task.due_date) < new Date())
+                      ? "overdue"
+                      : task.status;
+                  return (
+                    <tr key={task.id}>
+                      <td className="px-4 py-3">{serviceName}</td>
+                      <td className="px-4 py-3">{task.title ?? task.task_template?.name ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="px-4 py-3 capitalize">{displayStatus}</td>
+                      {canUpdateTask && (
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/dashboard/clients/${id}/tasks/${task.id}`}
+                            className="text-blue-400 hover:underline"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

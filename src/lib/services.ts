@@ -1,8 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Service, ServiceStage } from "@/types/database";
+import type {
+  Service,
+  ServiceStage,
+  TaskTemplate,
+  TaskTemplateChecklistItem,
+} from "@/types/database";
 
 export interface ServiceWithStages extends Service {
   service_stages: ServiceStage[];
+}
+
+export interface ServiceWithTaskTemplates extends Service {
+  task_templates: (TaskTemplate & {
+    task_template_checklist?: TaskTemplateChecklistItem[];
+  })[];
 }
 
 export async function getServicesWithStages(): Promise<ServiceWithStages[]> {
@@ -25,4 +36,100 @@ export async function getServicesWithStages(): Promise<ServiceWithStages[]> {
       (a, b) => a.sort_order - b.sort_order
     ),
   }));
+}
+
+export async function getServicesWithTaskTemplates(): Promise<
+  ServiceWithTaskTemplates[]
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("services")
+    .select(
+      `
+      id,
+      name,
+      description,
+      created_at,
+      task_templates(
+        id,
+        service_id,
+        name,
+        description,
+        sort_order,
+        default_due_offset_days,
+        created_at,
+        updated_at,
+        task_template_checklist(id, task_template_id, label, sort_order, created_at)
+      )
+    `
+    )
+    .order("name");
+  if (error) throw error;
+  const list = (data ?? []) as (Service & {
+    task_templates: (TaskTemplate & {
+      task_template_checklist?: TaskTemplateChecklistItem[];
+    })[];
+  })[];
+  return list.map((s) => ({
+    ...s,
+    task_templates: (s.task_templates ?? []).sort(
+      (a, b) => a.sort_order - b.sort_order
+    ),
+  }));
+}
+
+export async function getServiceById(
+  id: string
+): Promise<ServiceWithTaskTemplates | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("services")
+    .select(
+      `
+      id,
+      name,
+      description,
+      created_at,
+      task_templates(
+        id,
+        service_id,
+        name,
+        description,
+        sort_order,
+        default_due_offset_days,
+        created_at,
+        updated_at,
+        task_template_checklist(id, task_template_id, label, sort_order, created_at)
+      )
+    `
+    )
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+  const s = data as Service & {
+    task_templates: (TaskTemplate & {
+      task_template_checklist?: TaskTemplateChecklistItem[];
+    })[];
+  };
+  return {
+    ...s,
+    task_templates: (s.task_templates ?? []).sort(
+      (a, b) => a.sort_order - b.sort_order
+    ),
+  };
+}
+
+/** Returns service_id -> number of client_services (clients using that service). */
+export async function getClientServiceCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("client_services")
+    .select("service_id");
+  if (error) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = (row as { service_id: string }).service_id;
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
 }

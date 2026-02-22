@@ -1,4 +1,4 @@
-// Align with Supabase schema (clients, services, client_services, service_stages, client_service_stages)
+// Align with Supabase schema (clients, services, client_services, service_stages, client_service_stages, task_templates, tasks, task_checklist_items)
 
 export type ClientStatus =
   | "lead"
@@ -13,6 +13,14 @@ export type ServiceStatus =
   | "active"
   | "paused"
   | "completed";
+
+export type TaskStatus =
+  | "draft"
+  | "scheduled"
+  | "ongoing"
+  | "overdue"
+  | "completed"
+  | "cancelled";
 
 export interface Client {
   id: string;
@@ -65,6 +73,50 @@ export interface ClientServiceStage {
   service_stage?: ServiceStage;
 }
 
+export interface TaskTemplate {
+  id: string;
+  service_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  default_due_offset_days: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskTemplateChecklistItem {
+  id: string;
+  task_template_id: string;
+  label: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Task {
+  id: string;
+  client_service_id: string;
+  task_template_id: string;
+  assignee_id: string | null;
+  title: string | null;
+  due_date: string | null;
+  scheduled_at: string | null;
+  status: TaskStatus;
+  output: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskChecklistItem {
+  id: string;
+  task_id: string;
+  label: string;
+  sort_order: number;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
 /** Client service with service name and current stage (from getClientById) */
 export interface ClientServiceWithDetails {
   id: string;
@@ -91,3 +143,9 @@ export type ClientServiceInsert = Omit<
   created_at?: string;
   updated_at?: string;
 };
+
+/** Task with optional template and checklist (from getTasksByClientServiceId etc.) */
+export interface TaskWithDetails extends Task {
+  task_template?: TaskTemplate;
+  task_checklist_items?: TaskChecklistItem[];
+}
