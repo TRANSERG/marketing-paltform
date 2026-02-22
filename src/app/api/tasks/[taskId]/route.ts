@@ -21,6 +21,12 @@ export async function PATCH(
     updates.due_date = body.due_date;
   if (typeof body.output === "string" || body.output === null)
     updates.output = body.output;
+  if (body.output_data !== undefined) {
+    if (body.output_data !== null && typeof body.output_data !== "object") {
+      return NextResponse.json({ error: "output_data must be an object or null" }, { status: 400 });
+    }
+    updates.output_data = body.output_data;
+  }
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
@@ -35,7 +41,7 @@ export async function PATCH(
     .from("tasks")
     .update(updates)
     .eq("id", taskId)
-    .select("id, status, due_date, output, completed_at, updated_at")
+    .select("id, status, due_date, output, output_data, completed_at, updated_at")
     .single();
 
   if (error) {

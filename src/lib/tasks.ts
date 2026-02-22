@@ -18,10 +18,11 @@ export async function getTasksByClientServiceId(
       scheduled_at,
       status,
       output,
+      output_data,
       completed_at,
       created_at,
       updated_at,
-      task_template:task_templates(id, name, description, sort_order, default_due_offset_days),
+      task_template:task_templates(id, name, description, sort_order, default_due_offset_days, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
       task_checklist_items(id, task_id, label, sort_order, completed, completed_at, created_at)
     `
     )
@@ -33,14 +34,29 @@ export async function getTasksByClientServiceId(
     task_templates?: unknown;
     task_checklist_items: TaskChecklistItem[];
   })[];
-  type TemplateShape = { id: string; name: string; description: string | null; sort_order: number; default_due_offset_days: number | null };
+  type TemplateShape = {
+    id: string;
+    name: string;
+    description: string | null;
+    sort_order: number;
+    default_due_offset_days: number | null;
+    task_template_fields?: { id: string; key: string; label: string; field_type: string; sort_order: number; required: boolean; options: unknown }[];
+  };
   return list.map((t) => {
     const raw = t.task_template ?? t.task_templates;
     const template = Array.isArray(raw) ? raw[0] : raw;
-    const safeTemplate: TemplateShape | undefined =
+    let safeTemplate: TemplateShape | undefined =
       template && typeof template === "object" && "id" in template
         ? (template as TemplateShape)
         : undefined;
+    if (safeTemplate?.task_template_fields) {
+      safeTemplate = {
+        ...safeTemplate,
+        task_template_fields: [...safeTemplate.task_template_fields].sort(
+          (a, b) => a.sort_order - b.sort_order
+        ),
+      };
+    }
     return {
       ...t,
       task_template: safeTemplate,
@@ -90,10 +106,11 @@ export async function getTaskById(
       scheduled_at,
       status,
       output,
+      output_data,
       completed_at,
       created_at,
       updated_at,
-      task_template:task_templates(id, service_id, name, description, sort_order, default_due_offset_days),
+      task_template:task_templates(id, service_id, name, description, sort_order, default_due_offset_days, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
       task_checklist_items(id, task_id, label, sort_order, completed, completed_at, created_at)
     `
     )
@@ -107,11 +124,21 @@ export async function getTaskById(
   };
   const raw = t.task_template ?? t.task_templates;
   const template = Array.isArray(raw) ? raw[0] : raw;
-  const templateShape = {} as NonNullable<TaskWithDetails["task_template"]>;
-  const safeTemplate =
+  type TemplateShape = NonNullable<TaskWithDetails["task_template"]> & {
+    task_template_fields?: { id: string; key: string; label: string; field_type: string; sort_order: number; required: boolean; options: unknown }[];
+  };
+  let safeTemplate: TemplateShape | undefined =
     template && typeof template === "object" && "id" in template
-      ? (template as typeof templateShape)
+      ? (template as TemplateShape)
       : undefined;
+  if (safeTemplate?.task_template_fields) {
+    safeTemplate = {
+      ...safeTemplate,
+      task_template_fields: [...safeTemplate.task_template_fields].sort(
+        (a, b) => a.sort_order - b.sort_order
+      ),
+    };
+  }
   return {
     ...t,
     task_template: safeTemplate,

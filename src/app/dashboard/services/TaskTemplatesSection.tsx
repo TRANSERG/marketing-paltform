@@ -2,12 +2,14 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TaskTemplate } from "@/types/database";
 
 interface TaskTemplatesSectionProps {
   serviceId: string;
   taskTemplates: (TaskTemplate & {
     task_template_checklist?: { id: string; label: string; sort_order: number }[];
+    task_template_fields?: { id: string }[];
   })[];
   createAction: (formData: FormData) => Promise<{ error?: string } | void>;
 }
@@ -118,6 +120,7 @@ export function TaskTemplatesSection({
                 <th className="px-4 py-3 font-medium">Order</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Due offset</th>
+                <th className="px-4 py-3 font-medium">Form fields</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
@@ -128,6 +131,14 @@ export function TaskTemplatesSection({
                   <td className="px-4 py-3 font-medium">{t.name}</td>
                   <td className="px-4 py-3 text-zinc-400">
                     {t.default_due_offset_days ?? "—"} days
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/services/${serviceId}/templates/${t.id}/fields`}
+                      className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                    >
+                      Form fields ({(t as { task_template_fields?: unknown[] }).task_template_fields?.length ?? 0})
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <button

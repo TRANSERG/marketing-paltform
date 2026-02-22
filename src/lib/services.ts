@@ -4,6 +4,7 @@ import type {
   ServiceStage,
   TaskTemplate,
   TaskTemplateChecklistItem,
+  TaskTemplateField,
 } from "@/types/database";
 
 export interface ServiceWithStages extends Service {
@@ -13,6 +14,7 @@ export interface ServiceWithStages extends Service {
 export interface ServiceWithTaskTemplates extends Service {
   task_templates: (TaskTemplate & {
     task_template_checklist?: TaskTemplateChecklistItem[];
+    task_template_fields?: TaskTemplateField[];
   })[];
 }
 
@@ -59,7 +61,8 @@ export async function getServicesWithTaskTemplates(): Promise<
         default_due_offset_days,
         created_at,
         updated_at,
-        task_template_checklist(id, task_template_id, label, sort_order, created_at)
+        task_template_checklist(id, task_template_id, label, sort_order, created_at),
+        task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)
       )
     `
     )
@@ -68,13 +71,17 @@ export async function getServicesWithTaskTemplates(): Promise<
   const list = (data ?? []) as (Service & {
     task_templates: (TaskTemplate & {
       task_template_checklist?: TaskTemplateChecklistItem[];
+      task_template_fields?: TaskTemplateField[];
     })[];
   })[];
   return list.map((s) => ({
     ...s,
-    task_templates: (s.task_templates ?? []).sort(
-      (a, b) => a.sort_order - b.sort_order
-    ),
+    task_templates: (s.task_templates ?? []).map((t) => ({
+      ...t,
+      task_template_fields: (t.task_template_fields ?? []).sort(
+        (a, b) => a.sort_order - b.sort_order
+      ),
+    })).sort((a, b) => a.sort_order - b.sort_order),
   }));
 }
 
@@ -99,7 +106,8 @@ export async function getServiceById(
         default_due_offset_days,
         created_at,
         updated_at,
-        task_template_checklist(id, task_template_id, label, sort_order, created_at)
+        task_template_checklist(id, task_template_id, label, sort_order, created_at),
+        task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)
       )
     `
     )
@@ -109,13 +117,17 @@ export async function getServiceById(
   const s = data as Service & {
     task_templates: (TaskTemplate & {
       task_template_checklist?: TaskTemplateChecklistItem[];
+      task_template_fields?: TaskTemplateField[];
     })[];
   };
   return {
     ...s,
-    task_templates: (s.task_templates ?? []).sort(
-      (a, b) => a.sort_order - b.sort_order
-    ),
+    task_templates: (s.task_templates ?? []).map((t) => ({
+      ...t,
+      task_template_fields: (t.task_template_fields ?? []).sort(
+        (a, b) => a.sort_order - b.sort_order
+      ),
+    })).sort((a, b) => a.sort_order - b.sort_order),
   };
 }
 

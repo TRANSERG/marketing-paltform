@@ -1,4 +1,4 @@
-// Align with Supabase schema (clients, services, client_services, service_stages, client_service_stages, task_templates, tasks, task_checklist_items)
+// Align with Supabase schema (clients, services, client_services, service_stages, client_service_stages, task_templates, task_template_fields, tasks, task_checklist_items)
 
 export type ClientStatus =
   | "lead"
@@ -73,6 +73,28 @@ export interface ClientServiceStage {
   service_stage?: ServiceStage;
 }
 
+export type TaskTemplateFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "date"
+  | "url"
+  | "file"
+  | "file_multiple";
+
+export interface TaskTemplateField {
+  id: string;
+  task_template_id: string;
+  key: string;
+  label: string;
+  field_type: TaskTemplateFieldType;
+  sort_order: number;
+  required: boolean;
+  options: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TaskTemplate {
   id: string;
   service_id: string;
@@ -82,6 +104,7 @@ export interface TaskTemplate {
   default_due_offset_days: number | null;
   created_at: string;
   updated_at: string;
+  task_template_fields?: TaskTemplateField[];
 }
 
 export interface TaskTemplateChecklistItem {
@@ -91,6 +114,9 @@ export interface TaskTemplateChecklistItem {
   sort_order: number;
   created_at: string;
 }
+
+/** Structured output keyed by field key; file fields = array of storage paths/URLs */
+export type TaskOutputData = Record<string, string | number | string[] | null>;
 
 export interface Task {
   id: string;
@@ -102,6 +128,7 @@ export interface Task {
   scheduled_at: string | null;
   status: TaskStatus;
   output: string | null;
+  output_data: TaskOutputData | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;

@@ -5,6 +5,7 @@ import { getClientById } from "@/lib/clients";
 import { getTaskById } from "@/lib/tasks";
 import { getProfileDisplayName } from "@/lib/users";
 import { hasPermission } from "@/types/auth";
+import type { TaskTemplateField } from "@/types/database";
 import { TaskDetailForm } from "./TaskDetailForm";
 import { TaskChecklist } from "./TaskChecklist";
 
@@ -82,16 +83,44 @@ export default async function TaskDetailPage({
               initialStatus={task.status}
               initialDueDate={task.due_date ?? undefined}
               initialOutput={task.output ?? undefined}
+              initialOutputData={task.output_data ?? undefined}
+              templateFields={(task.task_template as { task_template_fields?: TaskTemplateField[] })?.task_template_fields ?? []}
             />
           </div>
         )}
 
-        {!canEdit && task.output && (
-          <div className="mt-6">
+        {!canEdit && (task.output || (task.output_data && Object.keys(task.output_data).length > 0)) && (
+          <div className="mt-6 space-y-4">
             <h3 className="text-sm font-medium text-zinc-400">Output</h3>
-            <div className="mt-2 whitespace-pre-wrap rounded bg-zinc-800/50 p-3 text-sm">
-              {task.output}
-            </div>
+            {task.output && (
+              <div className="whitespace-pre-wrap rounded bg-zinc-800/50 p-3 text-sm">
+                {task.output}
+              </div>
+            )}
+            {task.output_data && Object.keys(task.output_data).length > 0 && (
+              <dl className="grid gap-2 rounded bg-zinc-800/50 p-3 text-sm">
+                {Object.entries(task.output_data).map(([key, value]) => (
+                  <div key={key}>
+                    <dt className="text-zinc-500 capitalize">{key.replace(/_/g, " ")}</dt>
+                    <dd>
+                      {Array.isArray(value)
+                        ? value.map((p) => (
+                            <a
+                              key={p}
+                              href={`/api/tasks/${task.id}/file?path=${encodeURIComponent(p)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-blue-400 hover:underline"
+                            >
+                              {p.split("/").pop()}
+                            </a>
+                          ))
+                        : String(value ?? "—")}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
         )}
       </div>
