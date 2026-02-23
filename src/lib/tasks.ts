@@ -2,8 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   Task,
   TaskWithDetails,
+  TaskWithClientContext,
   TaskChecklistItem,
   TaskRecurrenceInterval,
+  GetTasksForCurrentUserOptions,
+  GetTasksForCurrentUserResult,
 } from "@/types/database";
 
 /** Compute next due date from a reference date using template recurrence. */
@@ -109,6 +112,135 @@ export async function getTasksByClientId(
     return da - db;
   });
   return all;
+}
+
+const TASKS_SELECT_WITH_CONTEXT = `
+  id,
+  client_service_id,
+  task_template_id,
+  assignee_id,
+  title,
+  due_date,
+  scheduled_at,
+  status,
+  output,
+  output_data,
+  completed_at,
+  created_at,
+  updated_at,
+  task_template:task_templates(id, name, description, sort_order, default_due_offset_days, is_recurring, recurrence_interval, recurrence_interval_count, task_template_fields(id, task_template_id, key, label, field_type, sort_order, required, options, created_at, updated_at)),
+  task_checklist_items(id, task_id, label, sort_order, completed, completed_at, created_at),
+  client_services(client_id, clients(name), service:services(name))
+`;
+
+type TemplateShape = {
+  id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  default_due_offset_days: number | null;
+  task_template_fields?: { id: string; key: string; label: string; field_type: string; sort_order: number; required: boolean; options: unknown }[];
+};
+
+type TaskRowFromDb = Task & {
+  task_template?: unknown;
+  task_templates?: unknown;
+  task_checklist_items: TaskChecklistItem[];
+  client_services?: { client_id: string; client?: { name: string }; clients?: { name: string }; service?: { name: string } } | { client_id: string; client?: { name: string }; clients?: { name: string }; service?: { name: string } }[];
+};
+
+function mapTaskRowToWithContext(t: TaskRowFromDb): TaskWithClientContext {
+  const raw = t.task_template ?? (t as { task_templates?: unknown }).task_templates;
+  const template = Array.isArray(raw) ? raw[0] : raw;
+  let safeTemplate: TemplateShape | undefined =
+    template && typeof template === "object" && "id" in template
+      ? (template as TemplateShape)
+      : undefined;
+  if (safeTemplate?.task_template_fields) {
+    safeTemplate = {
+      ...safeTemplate,
+      task_template_fields: [...safeTemplate.task_template_fields].sort(
+        (a, b) => a.sort_order - b.sort_order
+      ),
+    };
+  }
+  const cs = Array.isArray(t.client_services) ? t.client_services[0] : t.client_services;
+  const client_id = cs?.client_id;
+  const nested = cs as { client?: { name: string }; clients?: { name: string }; service?: { name: string } } | undefined;
+  const client_name = nested?.client?.name ?? nested?.clients?.name ?? undefined;
+  const service_name = nested?.service?.name ?? undefined;
+  return {
+    ...t,
+    task_template: safeTemplate,
+    task_checklist_items: (t.task_checklist_items ?? []).sort(
+      (a, b) => a.sort_order - b.sort_order
+    ),
+    client_id,
+    client_name,
+    service_name,
+  } as TaskWithClientContext;
+}
+
+export async function getTasksForCurrentUser(
+  options: GetTasksForCurrentUserOptions = {},
+  currentUserId?: string | null
+): Promise<GetTasksForCurrentUserResult> {
+  const supabase = await createClient();
+  const page = Math.max(1, options.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, options.pageSize ?? 25));
+
+  let clientServiceIds: string[] | null = null;
+  if (options.client_id || options.service_id) {
+    let q = supabase.from("client_services").select("id");
+    if (options.client_id) q = q.eq("client_id", options.client_id);
+    if (options.service_id) q = q.eq("service_id", options.service_id);
+    const { data: rows } = await q;
+    clientServiceIds = (rows ?? []).map((r: { id: string }) => r.id);
+    if (clientServiceIds.length === 0) {
+      return { tasks: [], totalCount: 0, page, pageSize };
+    }
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  let dataQuery = supabase
+    .from("tasks")
+    .select(TASKS_SELECT_WITH_CONTEXT, { count: "exact" });
+
+  if (clientServiceIds) {
+    dataQuery = dataQuery.in("client_service_id", clientServiceIds);
+  }
+  if (options.assignee) {
+    const assigneeId = options.assignee === "me" ? currentUserId : options.assignee;
+    if (assigneeId) dataQuery = dataQuery.eq("assignee_id", assigneeId);
+  }
+  if (options.status) {
+    if (options.status === "overdue") {
+      dataQuery = dataQuery.lt("due_date", todayIso).not("status", "in", '("completed","cancelled")');
+    } else {
+      dataQuery = dataQuery.eq("status", options.status);
+    }
+  }
+  if (options.due_from) {
+    dataQuery = dataQuery.gte("due_date", options.due_from);
+  }
+  if (options.due_to) {
+    dataQuery = dataQuery.lte("due_date", options.due_to);
+  }
+
+  dataQuery = dataQuery.order("due_date", { ascending: true, nullsFirst: false });
+  const from = (page - 1) * pageSize;
+  dataQuery = dataQuery.range(from, from + pageSize - 1);
+
+  const { data, error, count } = await dataQuery;
+  if (error) throw error;
+
+  const list = (data ?? []) as unknown as TaskRowFromDb[];
+
+  const tasks = list.map(mapTaskRowToWithContext);
+  const totalCount = count ?? 0;
+
+  return { tasks, totalCount, page, pageSize };
 }
 
 export async function getTaskById(

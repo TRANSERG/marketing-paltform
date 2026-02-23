@@ -181,3 +181,29 @@ export interface TaskWithDetails extends Task {
   task_template?: TaskTemplate;
   task_checklist_items?: TaskChecklistItem[];
 }
+
+/** Task with client/service context for all-tasks view */
+export interface TaskWithClientContext extends TaskWithDetails {
+  client_id?: string;
+  client_name?: string;
+  service_name?: string;
+}
+
+/** Options for getTasksForCurrentUser (filters + pagination) */
+export interface GetTasksForCurrentUserOptions {
+  status?: TaskStatus | "overdue";
+  assignee?: "me" | string;
+  client_id?: string;
+  service_id?: string;
+  due_from?: string;
+  due_to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetTasksForCurrentUserResult {
+  tasks: TaskWithClientContext[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}

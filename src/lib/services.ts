@@ -18,6 +18,16 @@ export interface ServiceWithTaskTemplates extends Service {
   })[];
 }
 
+export async function getServicesForFilter(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("services")
+    .select("id, name")
+    .order("name");
+  if (error) throw error;
+  return (data ?? []) as { id: string; name: string }[];
+}
+
 export async function getServicesWithStages(): Promise<ServiceWithStages[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

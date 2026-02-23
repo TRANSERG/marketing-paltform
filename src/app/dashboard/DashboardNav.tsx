@@ -43,6 +43,14 @@ export function DashboardNav({ user }: { user: AuthUser }) {
           Services
         </Link>
       )}
+      {(hasPermission(user, "client_services.update_stage") || hasPermission(user, "clients.read") || isAdmin(user)) && (
+        <Link
+          href="/dashboard/tasks"
+          className={pathname?.startsWith("/dashboard/tasks") ? `${navClass} ${activeClass}` : navClass}
+        >
+          Tasks
+        </Link>
+      )}
       {isAdmin(user) && (
         <>
           <Link
