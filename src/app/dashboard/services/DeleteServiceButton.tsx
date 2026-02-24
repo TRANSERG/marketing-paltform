@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 interface DeleteServiceButtonProps {
   serviceId: string;
@@ -42,9 +43,16 @@ export function DeleteServiceButton({
       type="button"
       onClick={handleDelete}
       disabled={deleting}
-      className="rounded-lg border border-red-800 px-3 py-2.5 text-sm text-red-400 hover:bg-red-900/30 disabled:opacity-50 min-h-[44px]"
+      className="rounded-lg border border-red-800 px-3 py-2.5 text-sm text-red-400 hover:bg-red-900/30 disabled:opacity-50 min-h-[44px] inline-flex items-center gap-2"
     >
-      {deleting ? "Deleting…" : "Delete service"}
+      {deleting ? (
+        <>
+          <Spinner size="sm" className="shrink-0" />
+          Deleting…
+        </>
+      ) : (
+        "Delete service"
+      )}
     </button>
   );
 }

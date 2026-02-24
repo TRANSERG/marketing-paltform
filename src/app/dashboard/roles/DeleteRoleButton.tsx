@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 interface DeleteRoleButtonProps {
   roleId: string;
@@ -31,9 +32,16 @@ export function DeleteRoleButton({ roleId, roleName }: DeleteRoleButtonProps) {
       type="button"
       onClick={handleClick}
       disabled={deleting}
-      className="rounded border border-red-800 px-3 py-1.5 text-sm text-red-400 hover:bg-red-900/30 disabled:opacity-50"
+      className="rounded border border-red-800 px-3 py-1.5 text-sm text-red-400 hover:bg-red-900/30 disabled:opacity-50 inline-flex items-center gap-2"
     >
-      {deleting ? "Deleting…" : "Delete role"}
+      {deleting ? (
+        <>
+          <Spinner size="sm" className="shrink-0" />
+          Deleting…
+        </>
+      ) : (
+        "Delete role"
+      )}
     </button>
   );
 }

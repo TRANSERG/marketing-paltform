@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Spinner } from "@/components/Spinner";
 import type { Client, ClientStatus } from "@/types/database";
 
 const STATUS_OPTIONS: ClientStatus[] = [
@@ -117,9 +118,16 @@ export function ClientForm({ action, client }: ClientFormProps) {
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
+          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 min-h-[48px] inline-flex items-center gap-2"
         >
-          {isPending ? "Saving…" : client ? "Update client" : "Create client"}
+          {isPending ? (
+            <>
+              <Spinner size="sm" className="shrink-0" />
+              Saving…
+            </>
+          ) : (
+            client ? "Update client" : "Create client"
+          )}
         </button>
         {client && (
           <a

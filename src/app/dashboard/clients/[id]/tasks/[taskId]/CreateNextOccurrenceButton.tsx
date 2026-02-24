@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Spinner } from "@/components/Spinner";
 
 export function CreateNextOccurrenceButton({
   taskId,
@@ -39,9 +40,16 @@ export function CreateNextOccurrenceButton({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50"
+      className="rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 inline-flex items-center gap-2"
     >
-      {loading ? "Creating…" : "Create next occurrence"}
+      {loading ? (
+        <>
+          <Spinner size="sm" className="shrink-0" />
+          Creating…
+        </>
+      ) : (
+        "Create next occurrence"
+      )}
     </button>
   );
 }

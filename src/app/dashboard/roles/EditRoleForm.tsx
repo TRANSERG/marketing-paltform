@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 interface EditRoleFormProps {
@@ -113,9 +114,16 @@ export function EditRoleForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
       >
-        {loading ? "Saving…" : "Save changes"}
+        {loading ? (
+          <>
+            <Spinner size="sm" className="shrink-0" />
+            Saving…
+          </>
+        ) : (
+          "Save changes"
+        )}
       </button>
     </form>
   );

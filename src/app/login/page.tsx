@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Spinner } from "@/components/Spinner";
 
 export default function LoginPage() {
   const [view, setView] = useState<"loading" | "login">("loading");
@@ -97,9 +98,16 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 min-h-[48px] text-base"
+            className="w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 min-h-[48px] text-base inline-flex items-center justify-center gap-2"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? (
+              <>
+                <Spinner size="sm" className="shrink-0" />
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
         <p className="text-center text-sm text-zinc-500">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { Spinner } from "@/components/Spinner";
 import type { ServiceWithStages } from "@/lib/services";
 
 type FormAction = (formData: FormData) => Promise<{ error?: string } | void>;
@@ -49,9 +50,16 @@ export function AddServiceForm({ action, services, clientId }: AddServiceFormPro
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
+          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 min-h-[48px] inline-flex items-center gap-2"
         >
-          {isPending ? "Adding…" : "Add service"}
+          {isPending ? (
+            <>
+              <Spinner size="sm" className="shrink-0" />
+              Adding…
+            </>
+          ) : (
+            "Add service"
+          )}
         </button>
         <Link
           href={`/dashboard/clients/${clientId}`}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Spinner } from "@/components/Spinner";
 
 interface RoleRowActionsProps {
   roleId: string;
@@ -42,9 +43,16 @@ export function RoleRowActions({ roleId, roleName, userCount }: RoleRowActionsPr
         type="button"
         onClick={handleDelete}
         disabled={deleting || userCount > 0}
-        className="rounded border border-red-800 px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="rounded border border-red-800 px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
       >
-        {deleting ? "Deleting…" : "Delete"}
+        {deleting ? (
+          <>
+            <Spinner size="sm" className="h-3 w-3 shrink-0" />
+            Deleting…
+          </>
+        ) : (
+          "Delete"
+        )}
       </button>
     </div>
   );

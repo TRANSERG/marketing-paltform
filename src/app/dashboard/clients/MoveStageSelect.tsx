@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 interface Stage {
   id: string;
@@ -44,18 +45,21 @@ export function MoveStageSelect({
   if (stages.length === 0) return <span className="text-zinc-500">—</span>;
 
   return (
-    <select
-      defaultValue={currentStageId ?? ""}
-      disabled={isPending}
-      onChange={handleChange}
-      className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-    >
-      <option value="">—</option>
-      {stages.map((s) => (
-        <option key={s.id} value={s.id}>
-          {s.name}
-        </option>
-      ))}
-    </select>
+    <span className="inline-flex items-center gap-2">
+      <select
+        defaultValue={currentStageId ?? ""}
+        disabled={isPending}
+        onChange={handleChange}
+        className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+      >
+        <option value="">—</option>
+        {stages.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+      {isPending && <Spinner size="sm" className="h-4 w-4 shrink-0 text-zinc-400" />}
+    </span>
   );
 }

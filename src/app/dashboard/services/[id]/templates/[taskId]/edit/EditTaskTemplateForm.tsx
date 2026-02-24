@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 import type { TaskTemplate } from "@/types/database";
 
 export function EditTaskTemplateForm({
@@ -127,9 +128,16 @@ export function EditTaskTemplateForm({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+        className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
       >
-        {isPending ? "Saving…" : "Save changes"}
+        {isPending ? (
+          <>
+            <Spinner size="sm" className="shrink-0" />
+            Saving…
+          </>
+        ) : (
+          "Save changes"
+        )}
       </button>
     </form>
   );

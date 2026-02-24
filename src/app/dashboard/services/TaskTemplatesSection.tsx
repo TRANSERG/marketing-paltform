@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Spinner } from "@/components/Spinner";
 import type { TaskTemplate } from "@/types/database";
 
 interface TaskTemplatesSectionProps {
@@ -144,9 +145,16 @@ export function TaskTemplatesSection({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
         >
-          {isPending ? "Adding…" : "Add template"}
+          {isPending ? (
+            <>
+              <Spinner size="sm" className="shrink-0" />
+              Adding…
+            </>
+          ) : (
+            "Add template"
+          )}
         </button>
       </form>
 
@@ -197,9 +205,16 @@ export function TaskTemplatesSection({
                       type="button"
                       onClick={() => handleDelete(t.id)}
                       disabled={deletingId === t.id}
-                      className="rounded border border-red-800 px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50"
+                      className="rounded border border-red-800 px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
-                      {deletingId === t.id ? "Deleting…" : "Delete"}
+                      {deletingId === t.id ? (
+                        <>
+                          <Spinner size="sm" className="h-3 w-3 shrink-0" />
+                          Deleting…
+                        </>
+                      ) : (
+                        "Delete"
+                      )}
                     </button>
                   </td>
                 </tr>

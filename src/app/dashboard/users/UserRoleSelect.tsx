@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 interface UserRoleSelectProps {
   userId: string;
@@ -32,17 +33,20 @@ export function UserRoleSelect({ userId, currentRoles, roles }: UserRoleSelectPr
   }
 
   return (
-    <select
-      defaultValue={currentRoleId}
-      disabled={loading}
-      onChange={handleChange}
-      className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-    >
-      {roles.map((r) => (
-        <option key={r.id} value={r.id}>
-          {r.name}
-        </option>
-      ))}
-    </select>
+    <span className="inline-flex items-center gap-2">
+      <select
+        defaultValue={currentRoleId}
+        disabled={loading}
+        onChange={handleChange}
+        className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+      >
+        {roles.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
+      {loading && <Spinner size="sm" className="h-4 w-4 shrink-0 text-zinc-400" />}
+    </span>
   );
 }

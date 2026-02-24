@@ -2,6 +2,7 @@
 
 import { useTransition, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 import type { TaskStatus, TaskOutputData, TaskTemplateField } from "@/types/database";
 
 const TASK_STATUSES: TaskStatus[] = [
@@ -216,9 +217,16 @@ export function TaskDetailForm({
                     type="button"
                     onClick={() => handleFileUpload(f.key, f.field_type === "file_multiple")}
                     disabled={isPending || uploading === f.key}
-                    className="rounded border border-zinc-600 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+                    className="rounded border border-zinc-600 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 inline-flex items-center gap-2"
                   >
-                    {uploading === f.key ? "Uploading…" : "Upload"}
+                    {uploading === f.key ? (
+                      <>
+                        <Spinner size="sm" className="h-4 w-4 shrink-0" />
+                        Uploading…
+                      </>
+                    ) : (
+                      "Upload"
+                    )}
                   </button>
                   {(() => {
                     const paths = outputData[f.key];
@@ -265,9 +273,16 @@ export function TaskDetailForm({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
       >
-        {isPending ? "Saving…" : "Save changes"}
+        {isPending ? (
+          <>
+            <Spinner size="sm" className="shrink-0" />
+            Saving…
+          </>
+        ) : (
+          "Save changes"
+        )}
       </button>
     </form>
   );

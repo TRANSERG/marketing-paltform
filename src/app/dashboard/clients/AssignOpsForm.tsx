@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 import type { AssignableUser } from "@/lib/users";
 
 interface AssignOpsFormProps {
@@ -56,9 +57,16 @@ export function AssignOpsForm({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded bg-zinc-700 px-3 py-1.5 text-sm text-white hover:bg-zinc-600 disabled:opacity-50"
+        className="rounded bg-zinc-700 px-3 py-1.5 text-sm text-white hover:bg-zinc-600 disabled:opacity-50 inline-flex items-center gap-1.5"
       >
-        {isPending ? "Saving…" : "Assign"}
+        {isPending ? (
+          <>
+            <Spinner size="sm" className="h-3 w-3 shrink-0" />
+            Saving…
+          </>
+        ) : (
+          "Assign"
+        )}
       </button>
     </form>
   );

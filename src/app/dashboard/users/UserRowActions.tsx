@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 interface UserRowActionsProps {
   userId: string;
@@ -30,9 +31,16 @@ export function UserRowActions({ userId, userEmail }: UserRowActionsProps) {
       type="button"
       onClick={handleRemove}
       disabled={removing}
-      className="rounded border border-red-800 bg-transparent px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50"
+      className="rounded border border-red-800 bg-transparent px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50 inline-flex items-center gap-1.5"
     >
-      {removing ? "Removing…" : "Remove"}
+      {removing ? (
+        <>
+          <Spinner size="sm" className="h-3 w-3 shrink-0" />
+          Removing…
+        </>
+      ) : (
+        "Remove"
+      )}
     </button>
   );
 }

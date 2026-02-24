@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 export function RemoveClientServiceButton({
   clientServiceId,
@@ -33,9 +34,16 @@ export function RemoveClientServiceButton({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+      className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50 inline-flex items-center gap-1.5"
     >
-      {isPending ? "Removing…" : "Remove"}
+      {isPending ? (
+        <>
+          <Spinner size="sm" className="h-3 w-3 shrink-0" />
+          Removing…
+        </>
+      ) : (
+        "Remove"
+      )}
     </button>
   );
 }

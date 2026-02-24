@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 export function DeleteClientButton({ clientId, clientName }: { clientId: string; clientName: string }) {
   const [isPending, startTransition] = useTransition();
@@ -24,9 +25,16 @@ export function DeleteClientButton({ clientId, clientName }: { clientId: string;
       type="button"
       onClick={handleDelete}
       disabled={isPending}
-      className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-900/30 hover:text-red-300 disabled:opacity-50 min-h-[48px]"
+      className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-900/30 hover:text-red-300 disabled:opacity-50 min-h-[48px] inline-flex items-center gap-2"
     >
-      {isPending ? "Deleting…" : "Delete client"}
+      {isPending ? (
+        <>
+          <Spinner size="sm" className="shrink-0" />
+          Deleting…
+        </>
+      ) : (
+        "Delete client"
+      )}
     </button>
   );
 }

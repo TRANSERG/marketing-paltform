@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 export function AddRoleForm() {
@@ -85,9 +86,16 @@ export function AddRoleForm() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
         >
-          {loading ? "Creating…" : "Add role"}
+          {loading ? (
+            <>
+              <Spinner size="sm" className="shrink-0" />
+              Creating…
+            </>
+          ) : (
+            "Add role"
+          )}
         </button>
       </div>
       <div>
