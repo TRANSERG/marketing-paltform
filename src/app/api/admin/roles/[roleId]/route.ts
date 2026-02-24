@@ -1,27 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getRoleById, countUsersWithRole } from "@/lib/roles";
-import { ALL_PERMISSIONS } from "@/lib/roles";
-
-async function requireUsersManage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  const { data: callerRoles } = await supabase
-    .from("user_roles")
-    .select("role_id")
-    .eq("user_id", user.id);
-  const roleIds = (callerRoles ?? []).map((r) => r.role_id);
-  if (roleIds.length === 0) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  const { data: perms } = await supabase
-    .from("role_permissions")
-    .select("role_id")
-    .eq("permission", "users.manage")
-    .in("role_id", roleIds);
-  if (!perms?.length) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  return { ok: true as const };
-}
+import { requireUsersManage } from "@/lib/auth-admin";
+import { getRoleById, countUsersWithRole, ALL_PERMISSIONS } from "@/lib/roles";
 
 /** GET: Get one role with permissions. Requires users.manage. */
 export async function GET(
@@ -29,11 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ roleId: string }> }
 ) {
   const check = await requireUsersManage();
-  if (check.error) return check.error;
+  if ("error" in check) return check.error;
   const { roleId } = await params;
-  const role = await getRoleById(roleId);
+  const [role, userCount] = await Promise.all([
+    getRoleById(roleId, check.supabase),
+    countUsersWithRole(roleId, check.supabase),
+  ]);
   if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
-  const userCount = await countUsersWithRole(roleId);
   return NextResponse.json({ role, user_count: userCount });
 }
 
@@ -43,8 +25,9 @@ export async function PATCH(
   { params }: { params: Promise<{ roleId: string }> }
 ) {
   const check = await requireUsersManage();
-  if (check.error) return check.error;
+  if ("error" in check) return check.error;
   const { roleId } = await params;
+  const supabase = check.supabase;
 
   const body = await request.json().catch(() => ({}));
   const name = typeof body.name === "string" ? body.name.trim() : undefined;
@@ -74,7 +57,7 @@ export async function PATCH(
       if (insertError) return NextResponse.json({ error: insertError.message }, { status: 400 });
     }
   }
-  const role = await getRoleById(roleId);
+  const role = await getRoleById(roleId, supabase);
   return NextResponse.json({ role });
 }
 
@@ -84,10 +67,10 @@ export async function DELETE(
   { params }: { params: Promise<{ roleId: string }> }
 ) {
   const check = await requireUsersManage();
-  if (check.error) return check.error;
+  if ("error" in check) return check.error;
   const { roleId } = await params;
 
-  const userCount = await countUsersWithRole(roleId);
+  const userCount = await countUsersWithRole(roleId, check.supabase);
   if (userCount > 0) {
     return NextResponse.json(
       { error: `Cannot delete role: ${userCount} user(s) have this role. Remove the role from all users first.` },

@@ -1,30 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-async function requireUsersManage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  const { data: callerRoles } = await supabase
-    .from("user_roles")
-    .select("role_id")
-    .eq("user_id", user.id);
-  const roleIds = (callerRoles ?? []).map((r) => r.role_id);
-  if (roleIds.length === 0) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  const { data: perms } = await supabase
-    .from("role_permissions")
-    .select("role_id")
-    .eq("permission", "users.manage")
-    .in("role_id", roleIds);
-  if (!perms?.length) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  return { ok: true as const };
-}
+import { requireUsersManage } from "@/lib/auth-admin";
 
 /** POST: Create a new user with email, password, optional display name, and role. Requires users.manage. */
 export async function POST(request: Request) {
   const check = await requireUsersManage();
-  if (check.error) return check.error;
+  if ("error" in check) return check.error;
 
   const body = await request.json().catch(() => ({}));
   const email = body.email as string | undefined;
@@ -65,12 +46,14 @@ export async function POST(request: Request) {
 
 /** GET: List users with email and roles (paginated). Query: page, perPage. Requires admin (users.manage). */
 export async function GET(request: Request) {
+  const check = await requireUsersManage();
+  if ("error" in check) return check.error;
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get("perPage") ?? "50", 10) || 50));
 
   const { getAdminUsersList } = await import("@/lib/users");
-  const result = await getAdminUsersList({ page, perPage });
+  const result = await getAdminUsersList({ page, perPage }, check.supabase);
   return NextResponse.json({
     users: result.users,
     hasMore: result.hasMore,
