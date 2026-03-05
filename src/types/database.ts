@@ -128,7 +128,9 @@ export interface Task {
   client_service_id: string;
   task_template_id: string;
   assignee_id: string | null;
+  assigned_by_id: string | null;
   title: string | null;
+  description: string | null;
   due_date: string | null;
   scheduled_at: string | null;
   status: TaskStatus;
@@ -176,10 +178,12 @@ export type ClientServiceInsert = Omit<
   updated_at?: string;
 };
 
-/** Task with optional template and checklist (from getTasksByClientServiceId etc.) */
+/** Task with optional template, checklist, and viewer ids (from getTaskById etc.) */
 export interface TaskWithDetails extends Task {
   task_template?: TaskTemplate;
   task_checklist_items?: TaskChecklistItem[];
+  /** User ids who can view this task (from task_viewers). */
+  viewer_ids?: string[];
 }
 
 /** Task with client/service context for all-tasks view */
@@ -207,3 +211,37 @@ export interface GetTasksForCurrentUserResult {
   page: number;
   pageSize: number;
 }
+
+// ─── Content Calendar ───────────────────────────────────────────────────────
+
+export type PostPlatform =
+  | "instagram"
+  | "facebook"
+  | "linkedin"
+  | "twitter"
+  | "tiktok";
+
+export type PostStatus = "draft" | "scheduled" | "published";
+
+export interface ContentPost {
+  id: string;
+  client_id: string;
+  created_by: string | null;
+  platform: PostPlatform;
+  caption: string;
+  scheduled_at: string; // ISO timestamptz
+  status: PostStatus;
+  media_path: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ContentPostInsert = Omit<
+  ContentPost,
+  "id" | "created_at" | "updated_at"
+> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};

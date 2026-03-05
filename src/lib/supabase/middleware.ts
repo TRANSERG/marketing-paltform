@@ -25,6 +25,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  // Validates JWT and refreshes session using refresh token in cookies when access token is expired
   await supabase.auth.getUser();
   return response;
 }

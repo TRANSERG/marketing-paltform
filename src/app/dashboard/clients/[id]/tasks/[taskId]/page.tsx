@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { getClientById } from "@/lib/clients";
 import { getTaskById } from "@/lib/tasks";
-import { getProfileDisplayName } from "@/lib/users";
+import { getAssignableUsers, getProfileDisplayName } from "@/lib/users";
 import { hasPermission } from "@/types/auth";
 import type { TaskTemplateField } from "@/types/database";
 import { TaskDetailForm } from "./TaskDetailForm";
@@ -32,9 +32,16 @@ export default async function TaskDetailPage({
     hasPermission(user, "clients.update");
   const isAssignee = task.assignee_id === user?.id;
   const canEdit = canUpdate || isAssignee;
-  const assigneeName = task.assignee_id
-    ? await getProfileDisplayName(task.assignee_id)
-    : null;
+
+  const [assigneeName, assignedByName, viewerNames, assignableUsers] = await Promise.all([
+    task.assignee_id ? getProfileDisplayName(task.assignee_id) : Promise.resolve(null),
+    task.assigned_by_id ? getProfileDisplayName(task.assigned_by_id) : Promise.resolve(null),
+    (task.viewer_ids?.length ?? 0) > 0
+      ? Promise.all((task.viewer_ids ?? []).map((id) => getProfileDisplayName(id)))
+      : Promise.resolve([] as (string | null)[]),
+    canUpdate ? getAssignableUsers() : Promise.resolve([]),
+  ]);
+  const viewerNamesDisplay = (viewerNames as (string | null)[]).filter(Boolean).join(", ") || "None";
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -51,6 +58,11 @@ export default async function TaskDetailPage({
         <h2 className="text-lg font-medium">
           {task.title ?? task.task_template?.name ?? "Task"}
         </h2>
+        {(task.description ?? (task.task_template as { description?: string | null })?.description) && (
+          <p className="mt-2 text-sm text-zinc-400">
+            {task.description ?? (task.task_template as { description?: string | null })?.description}
+          </p>
+        )}
         <dl className="mt-4 grid gap-2 text-sm">
           <div>
             <dt className="text-zinc-500">Client</dt>
@@ -68,12 +80,18 @@ export default async function TaskDetailPage({
             <dt className="text-zinc-500">Status</dt>
             <dd className="capitalize">{task.status}</dd>
           </div>
-          {assigneeName !== null && (
-            <div>
-              <dt className="text-zinc-500">Assignee</dt>
-              <dd>{assigneeName ?? "Unassigned"}</dd>
-            </div>
-          )}
+          <div>
+            <dt className="text-zinc-500">Assignee</dt>
+            <dd>{assigneeName ?? "Unassigned"}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Assigned by</dt>
+            <dd>{assignedByName ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Viewers</dt>
+            <dd>{viewerNamesDisplay}</dd>
+          </div>
         </dl>
 
         {canEdit && (
@@ -83,8 +101,12 @@ export default async function TaskDetailPage({
               clientId={clientId}
               initialStatus={task.status}
               initialDueDate={task.due_date ?? undefined}
+              initialDescription={task.description ?? undefined}
               initialOutput={task.output ?? undefined}
               initialOutputData={task.output_data ?? undefined}
+              initialAssigneeId={task.assignee_id ?? undefined}
+              initialViewerIds={task.viewer_ids ?? []}
+              assignableUsers={assignableUsers}
               templateFields={(task.task_template as { task_template_fields?: TaskTemplateField[] })?.task_template_fields ?? []}
             />
           </div>

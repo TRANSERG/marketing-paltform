@@ -51,6 +51,14 @@ export function DashboardNav({ user }: { user: AuthUser }) {
           Tasks
         </Link>
       )}
+      {(hasPermission(user, "clients.read") || isAdmin(user)) && (
+        <Link
+          href="/dashboard/content-calendar"
+          className={pathname?.startsWith("/dashboard/content-calendar") ? `${navClass} ${activeClass}` : navClass}
+        >
+          Content Calendar
+        </Link>
+      )}
       {isAdmin(user) && (
         <>
           <Link

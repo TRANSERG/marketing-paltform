@@ -3,6 +3,7 @@
 import { useTransition, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/Spinner";
+import type { AssignableUser } from "@/lib/users";
 import type { TaskStatus, TaskOutputData, TaskTemplateField } from "@/types/database";
 
 const TASK_STATUSES: TaskStatus[] = [
@@ -19,8 +20,12 @@ interface TaskDetailFormProps {
   clientId: string;
   initialStatus: TaskStatus;
   initialDueDate?: string;
+  initialDescription?: string;
   initialOutput?: string;
   initialOutputData?: TaskOutputData | null;
+  initialAssigneeId?: string;
+  initialViewerIds?: string[];
+  assignableUsers?: AssignableUser[];
   templateFields?: TaskTemplateField[];
 }
 
@@ -28,13 +33,18 @@ export function TaskDetailForm({
   taskId,
   initialStatus,
   initialDueDate,
+  initialDescription,
   initialOutput,
   initialOutputData,
+  initialAssigneeId,
+  initialViewerIds = [],
+  assignableUsers = [],
   templateFields = [],
 }: TaskDetailFormProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const hasFormFields = templateFields.length > 0;
+  const [viewerIds, setViewerIds] = useState<string[]>(initialViewerIds);
   const [outputData, setOutputData] = useState<TaskOutputData>(() => {
     const o: TaskOutputData = {};
     templateFields.forEach((f) => {
@@ -101,6 +111,12 @@ export function TaskDetailForm({
     });
   }, []);
 
+  const toggleViewer = useCallback((userId: string) => {
+    setViewerIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  }, []);
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -108,10 +124,25 @@ export function TaskDetailForm({
     const status = formData.get("status") as TaskStatus;
     const due_date = (formData.get("due_date") as string) || null;
     const output = hasFormFields ? null : (formData.get("output") as string) || null;
-    const body: { status: TaskStatus; due_date: string | null; output?: string | null; output_data?: TaskOutputData } = {
+    const description = (formData.get("description") as string) || null;
+    const body: {
+      status: TaskStatus;
+      due_date: string | null;
+      description?: string | null;
+      output?: string | null;
+      output_data?: TaskOutputData;
+      assignee_id?: string | null;
+      viewers?: string[];
+    } = {
       status,
       due_date,
+      description,
     };
+    if (assignableUsers.length > 0) {
+      const assigneeIdRaw = formData.get("assignee_id") as string | null;
+      body.assignee_id = assigneeIdRaw === "__none__" || assigneeIdRaw === "" || !assigneeIdRaw ? null : assigneeIdRaw;
+      body.viewers = viewerIds;
+    }
     if (!hasFormFields) body.output = output;
     else body.output_data = outputData;
     startTransition(async () => {
@@ -132,6 +163,49 @@ export function TaskDetailForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      {assignableUsers.length > 0 && (
+        <>
+          <div>
+            <label htmlFor="assignee_id" className="block text-sm text-zinc-400">
+              Assignee
+            </label>
+            <select
+              id="assignee_id"
+              name="assignee_id"
+              defaultValue={initialAssigneeId ?? "__none__"}
+              disabled={isPending}
+              className="mt-1 w-full max-w-xs rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            >
+              <option value="__none__">Unassigned</option>
+              {assignableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.display_name ?? u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <span className="block text-sm text-zinc-400 mb-2">Viewers</span>
+            <ul className="rounded border border-zinc-700 bg-zinc-900 p-2 max-h-40 overflow-y-auto space-y-1">
+              {assignableUsers.map((u) => (
+                <li key={u.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`viewer-${u.id}`}
+                    checked={viewerIds.includes(u.id)}
+                    onChange={() => toggleViewer(u.id)}
+                    disabled={isPending}
+                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                  />
+                  <label htmlFor={`viewer-${u.id}`} className="text-sm text-white cursor-pointer">
+                    {u.display_name ?? u.id.slice(0, 8)}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
       <div>
         <label htmlFor="status" className="block text-sm text-zinc-400">
           Status
@@ -161,6 +235,20 @@ export function TaskDetailForm({
           defaultValue={initialDueDate ?? ""}
           disabled={isPending}
           className="mt-1 w-full max-w-xs rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+        />
+      </div>
+      <div>
+        <label htmlFor="description" className="block text-sm text-zinc-400">
+          Description
+        </label>
+        <textarea
+          id="description"
+          name="description"
+          rows={3}
+          defaultValue={initialDescription ?? ""}
+          disabled={isPending}
+          placeholder="Optional task description..."
+          className="mt-1 w-full max-w-md rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
         />
       </div>
 

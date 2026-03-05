@@ -38,7 +38,9 @@ export async function getTasksByClientServiceId(
       client_service_id,
       task_template_id,
       assignee_id,
+      assigned_by_id,
       title,
+      description,
       due_date,
       scheduled_at,
       status,
@@ -119,7 +121,9 @@ const TASKS_SELECT_WITH_CONTEXT = `
   client_service_id,
   task_template_id,
   assignee_id,
+  assigned_by_id,
   title,
+  description,
   due_date,
   scheduled_at,
   status,
@@ -255,7 +259,9 @@ export async function getTaskById(
       client_service_id,
       task_template_id,
       assignee_id,
+      assigned_by_id,
       title,
+      description,
       due_date,
       scheduled_at,
       status,
@@ -276,6 +282,16 @@ export async function getTaskById(
     task_templates?: unknown;
     task_checklist_items: TaskChecklistItem[];
   };
+  let viewerIds: string[] = [];
+  try {
+    const viewerRes = await supabase
+      .from("task_viewers")
+      .select("user_id")
+      .eq("task_id", taskId);
+    if (viewerRes.data) viewerIds = viewerRes.data.map((r) => r.user_id);
+  } catch {
+    // task_viewers table may not exist or RLS may fail; use empty list
+  }
   const raw = t.task_template ?? t.task_templates;
   const template = Array.isArray(raw) ? raw[0] : raw;
   type TemplateShape = NonNullable<TaskWithDetails["task_template"]> & {
@@ -299,6 +315,7 @@ export async function getTaskById(
     task_checklist_items: (t.task_checklist_items ?? []).sort(
       (a, b) => a.sort_order - b.sort_order
     ),
+    viewer_ids: viewerIds,
   } as TaskWithDetails;
 }
 
@@ -308,10 +325,13 @@ export async function createTasksForClientService(
   assigneeId: string | null
 ): Promise<void> {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const assignedById = assigneeId && user?.id ? user.id : null;
+
   const { data: templates, error: templatesError } = await supabase
     .from("task_templates")
     .select(
-      "id, name, default_due_offset_days, task_template_checklist(id, label, sort_order)"
+      "id, name, description, default_due_offset_days, task_template_checklist(id, label, sort_order)"
     )
     .eq("service_id", serviceId)
     .order("sort_order", { ascending: true });
@@ -322,6 +342,7 @@ export async function createTasksForClientService(
     const tmpl = templates[i] as {
       id: string;
       name: string;
+      description: string | null;
       default_due_offset_days: number | null;
       task_template_checklist?: { id: string; label: string; sort_order: number }[];
     };
@@ -334,7 +355,9 @@ export async function createTasksForClientService(
         client_service_id: clientServiceId,
         task_template_id: tmpl.id,
         assignee_id: assigneeId,
+        assigned_by_id: assignedById,
         title: tmpl.name,
+        description: tmpl.description ?? null,
         due_date: dueDate.toISOString().slice(0, 10),
         status: "scheduled",
       })
@@ -362,7 +385,7 @@ export async function createNextOccurrence(
   const { data: task, error: taskError } = await supabase
     .from("tasks")
     .select(
-      "id, client_service_id, task_template_id, assignee_id, status, completed_at, due_date"
+      "id, client_service_id, task_template_id, assignee_id, assigned_by_id, description, status, completed_at, due_date"
     )
     .eq("id", taskId)
     .single();
@@ -373,7 +396,7 @@ export async function createNextOccurrence(
   const { data: template, error: templateError } = await supabase
     .from("task_templates")
     .select(
-      "id, name, is_recurring, recurrence_interval, recurrence_interval_count, task_template_checklist(id, label, sort_order)"
+      "id, name, description, is_recurring, recurrence_interval, recurrence_interval_count, task_template_checklist(id, label, sort_order)"
     )
     .eq("id", task.task_template_id)
     .single();
@@ -384,6 +407,7 @@ export async function createNextOccurrence(
     recurrence_interval: TaskRecurrenceInterval | null;
     recurrence_interval_count: number;
     name: string;
+    description: string | null;
     task_template_checklist?: { label: string; sort_order: number }[];
   };
   if (!t.is_recurring || !t.recurrence_interval)
@@ -399,6 +423,7 @@ export async function createNextOccurrence(
     t.recurrence_interval,
     t.recurrence_interval_count
   );
+  const taskDescription = (task as { description?: string | null }).description ?? t.description ?? null;
 
   const { data: newTask, error: insertError } = await supabase
     .from("tasks")
@@ -406,7 +431,9 @@ export async function createNextOccurrence(
       client_service_id: task.client_service_id,
       task_template_id: task.task_template_id,
       assignee_id: task.assignee_id,
+      assigned_by_id: task.assigned_by_id,
       title: t.name,
+      description: taskDescription,
       due_date: nextDue,
       status: "scheduled",
     })
