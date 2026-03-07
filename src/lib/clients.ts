@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Client, ClientStatus, ClientServiceWithDetails } from "@/types/database";
 
 const CLIENT_LIST_COLS =
-  "id, name, contact_email, contact_phone, address, timezone, status, created_by, assigned_ops_id, sold_at, activated_at, created_at, updated_at";
+  "id, name, contact_email, contact_phone, address, timezone, status, website, business_category, tagline, created_by, assigned_ops_id, sold_at, activated_at, created_at, updated_at";
 
 export async function getClients(
   filters?: { status?: ClientStatus },
@@ -35,7 +35,7 @@ export async function getClientById(id: string): Promise<{
   const [clientResult, clientServicesResult] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name, contact_email, contact_phone, address, timezone, status, created_by, assigned_ops_id, sold_at, activated_at, created_at, updated_at")
+      .select("id, name, contact_email, contact_phone, address, timezone, status, website, business_category, tagline, created_by, assigned_ops_id, sold_at, activated_at, created_at, updated_at")
       .eq("id", id)
       .single(),
     supabase

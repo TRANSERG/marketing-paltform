@@ -30,6 +30,9 @@ export interface Client {
   address: string | null;
   timezone: string | null;
   status: ClientStatus;
+  website: string | null;
+  business_category: string | null;
+  tagline: string | null;
   created_by: string | null;
   assigned_ops_id: string | null;
   sold_at: string | null;
@@ -37,6 +40,204 @@ export interface Client {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Client Profile ──────────────────────────────────────────────────────────
+
+export type TeamSize = "solo" | "2-5" | "6-20" | "20+";
+export type PriceRange = "$" | "$$" | "$$$" | "$$$$";
+
+export interface WorkingHoursDay {
+  day: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+  open: string;   // "09:00"
+  close: string;  // "18:00"
+  closed: boolean;
+}
+
+export interface SpecialHoursDay {
+  date: string;   // "2025-12-25"
+  label: string;  // "Christmas"
+  open?: string;
+  close?: string;
+  closed: boolean;
+}
+
+export interface ClientProfile {
+  id: string;
+  client_id: string;
+
+  // About
+  description: string | null;
+  founded_year: number | null;
+  team_size: TeamSize | null;
+  price_range: PriceRange | null;
+  target_audience: string | null;
+
+  // Structured address
+  street_address: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
+
+  // Social & online
+  instagram_handle: string | null;
+  facebook_handle: string | null;
+  tiktok_handle: string | null;
+  youtube_handle: string | null;
+  google_business_url: string | null;
+  booking_link: string | null;
+  order_link: string | null;
+
+  // Operational
+  delivery_platforms: string[] | null;
+  payment_methods: string[] | null;
+  working_hours: WorkingHoursDay[] | null;
+  special_hours: SpecialHoursDay[] | null;
+  amenities: string[] | null;
+  languages_spoken: string[] | null;
+
+  // Marketing
+  unique_selling_points: string[] | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClientProfileUpsert = Omit<ClientProfile, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+};
+
+// ─── Client Brand ────────────────────────────────────────────────────────────
+
+export type BrandTone =
+  | "professional"
+  | "friendly"
+  | "playful"
+  | "bold"
+  | "luxurious"
+  | "earthy"
+  | "minimalist"
+  | "edgy";
+
+export interface ClientBrand {
+  id: string;
+  client_id: string;
+
+  logo_path: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+  background_color: string | null;
+  heading_font: string | null;
+  body_font: string | null;
+  brand_tone: BrandTone | null;
+  style_notes: string | null;
+  content_themes: string[] | null;
+  hashtags: string[] | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClientBrandUpsert = Omit<ClientBrand, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+};
+
+// ─── Client Offerings ────────────────────────────────────────────────────────
+
+export type OfferingType =
+  | "menu_item"
+  | "service"
+  | "class"
+  | "product"
+  | "membership"
+  | "package";
+
+export interface ClientOffering {
+  id: string;
+  client_id: string;
+  offering_type: OfferingType;
+  category: string | null;
+  name: string;
+  description: string | null;
+  price: number | null;
+  currency: string;
+  duration_minutes: number | null;
+  is_available: boolean;
+  is_featured: boolean;
+  tags: string[] | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClientOfferingInsert = Omit<ClientOffering, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+};
+
+// ─── Client Team Members ─────────────────────────────────────────────────────
+
+export interface ClientTeamMember {
+  id: string;
+  client_id: string;
+  name: string;
+  role: string | null;
+  bio: string | null;
+  photo_path: string | null;
+  specialties: string[] | null;
+  instagram_handle: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClientTeamMemberInsert = Omit<ClientTeamMember, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+};
+
+// ─── Client Assets ───────────────────────────────────────────────────────────
+
+export type AssetType =
+  | "photo"
+  | "video"
+  | "menu_design"
+  | "logo"
+  | "graphic"
+  | "document"
+  | "other";
+
+export type AssetCategory =
+  | "food"
+  | "drinks"
+  | "interior"
+  | "exterior"
+  | "team"
+  | "product"
+  | "event"
+  | "before_after"
+  | "packaging"
+  | "other";
+
+export interface ClientAsset {
+  id: string;
+  client_id: string;
+  created_by: string | null;
+  asset_type: AssetType;
+  category: AssetCategory | null;
+  file_path: string;
+  file_name: string | null;
+  file_size: number | null;
+  mime_type: string | null;
+  alt_text: string | null;
+  tags: string[] | null;
+  is_featured: boolean;
+  created_at: string;
+}
+
+export type ClientAssetInsert = Omit<ClientAsset, "id" | "created_at"> & {
+  id?: string;
+};
 
 export interface Service {
   id: string;
